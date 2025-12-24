@@ -1,11 +1,11 @@
-// keyboard.rs - Simple test version (no naked functions, uses external asm)
+// keyboard.rs - Check status port to prevent interrupt storms
 
 use core::arch::asm;
 use crate::pic;
 
 const KEYBOARD_DATA_PORT: u16 = 0x60;
+const KEYBOARD_STATUS_PORT: u16 = 0x64;
 
-// Simple counter at a fixed screen position
 static mut COUNTER: u8 = b'0';
 
 #[inline]
@@ -20,33 +20,61 @@ unsafe fn inb(port: u16) -> u8 {
     value
 }
 
-// Write directly to VGA memory (bypass print! macro)
-unsafe fn write_char_at(row: usize, col: usize, ch: u8) {
+#[inline]
+unsafe fn outb(port: u16, value: u8) {
+    asm!(
+        "out dx, al",
+        in("dx") port,
+        in("al") value,
+        options(nomem, nostack, preserves_flags)
+    );
+}
+
+unsafe fn write_char_at(row: usize, col: usize, ch: u8, color: u8) {
     let vga_buffer = 0xb8000 as *mut u8;
     let offset = (row * 80 + col) * 2;
     *vga_buffer.add(offset) = ch;
-    *vga_buffer.add(offset + 1) = 0x0F; // White on black
+    *vga_buffer.add(offset + 1) = color;
 }
 
-// Rust handler - called from assembly wrapper in keyboard_int.asm
 #[no_mangle]
 pub extern "C" fn rust_keyboard_handler() {
     unsafe {
-        // Read and discard scan code
-        let _scancode = inb(KEYBOARD_DATA_PORT);
+        // Check if there's actually data available
+        let status = inb(KEYBOARD_STATUS_PORT);
         
-        // Send EOI immediately
-        pic::send_eoi(1);
-        
-        // Increment counter and display it
-        COUNTER += 1;
-        if COUNTER > b'9' {
-            COUNTER = b'0';
+        // Bit 0 = output buffer status (1 = full, data available)
+        if (status & 0x01) == 0 {
+            // No data available, spurious interrupt
+            pic::send_eoi(1);
+            return;
         }
         
-        // Write counter to screen at position (10, 40)
-        write_char_at(10, 40, COUNTER);
+        // Read scan code (this clears the keyboard buffer)
+        let scancode = inb(KEYBOARD_DATA_PORT);
+        
+        // Send EOI immediately after reading
+        pic::send_eoi(1);
+        
+        // Only process key press (not release)
+        if scancode < 128 && scancode != 0 {
+            // Increment and display counter
+            COUNTER += 1;
+            if COUNTER > b'9' {
+                COUNTER = b'0';
+            }
+            
+            // Display at row 12, col 40 (middle of screen)
+            write_char_at(12, 40, COUNTER, 0x0F); // White on black
+            
+            // Also write the scancode in hex next to it for debugging
+            let hex_hi = (scancode >> 4) & 0x0F;
+            let hex_lo = scancode & 0x0F;
+            let hi_char = if hex_hi < 10 { b'0' + hex_hi } else { b'A' + hex_hi - 10 };
+            let lo_char = if hex_lo < 10 { b'0' + hex_lo } else { b'A' + hex_lo - 10 };
+            
+            write_char_at(12, 43, hi_char, 0x0E); // Yellow
+            write_char_at(12, 44, lo_char, 0x0E);
+        }
     }
 }
-
-// Note: keyboard_interrupt_handler is defined in keyboard_int.asm
