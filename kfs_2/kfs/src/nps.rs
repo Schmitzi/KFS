@@ -32,10 +32,9 @@ impl NPShell {
                 self.show_prompt();
             }
             0x08 => {
-                // Backspace
                 if self.pos > 0 {
                     self.pos -= 1;
-                    crate::print!("\x08 \x08"); // Erase character
+                    crate::vga::writer().backspace();
                 }
             }
             0x20..=0x7E => {
@@ -74,6 +73,7 @@ impl NPShell {
             "about" => self.cmd_about(),
             "reboot" => self.cmd_reboot(),
             "halt" => self.cmd_halt(),
+            "42" => self.cmd_42(),
             "" => {},
             _ => println!("Unknown command: '{}'. Type 'help' for commands.", cmd),
         }
@@ -84,6 +84,7 @@ impl NPShell {
         println!("  help   - Show this help message");
         println!("  stack  - Print kernel stack information");
         println!("  gdt    - Print GDT information");
+        println!("  42     - Print the mandatory 42");
         println!("  clear  - Clear the screen");
         println!("  about  - About this kernel");
         println!("  halt   - Halt the CPU");
@@ -100,7 +101,9 @@ impl NPShell {
 
     fn cmd_clear(&self) {
         crate::vga::writer().clear_screen();
+        crate::vga::writer().set_color(vga::Color::LightBlue, vga::Color::Black);
         println!("NPS - Not a POSIX Shell - Type 'help' for commands");
+        crate::vga::writer().set_color(vga::Color::White, vga::Color::Black);
     }
 
     fn cmd_about(&self) {
@@ -138,6 +141,18 @@ impl NPShell {
             core::arch::asm!("cli; hlt", options(noreturn));
         }
     }
+
+    fn cmd_42(&self) {
+        println!("    === Printing 42 ===");
+        println!("");
+        println!("        :::      ::::::::");
+        println!("      :+:      :+:    :+:");
+        println!("    +:+ +:+         +:+");
+        println!("  +#+  +:+       +#+");
+        println!("+#+#+#+#+#+   +#+");
+        println!("     #+#    #+#");
+        println!("    ###   ########.fr");
+    }
 }
 
 // Global shell instance
@@ -145,7 +160,9 @@ static mut NPSHELL: NPShell = NPShell::new();
 
 // Initialize shell
 pub fn init() {
+    crate::vga::writer().set_color(vga::Color::LightBlue, vga::Color::Black);
     println!("NPS - Not a POSIX Shell - Type 'help' for commands");
+    crate::vga::writer().set_color(vga::Color::White, vga::Color::Black);
     unsafe {
         NPSHELL.show_prompt();
     }

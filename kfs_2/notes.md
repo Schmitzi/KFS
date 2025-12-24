@@ -132,7 +132,7 @@ static mut GDT: [GdtEntry; 6] = [/* your entries */];
 // You can also use the linker to do this
 ```
 
-1. ## What the GDT Is (OSDev summary, simplified)
+## 1. What the GDT Is (OSDev summary, simplified)
 
 The Global Descriptor Table (GDT) tells the CPU how memory segments behave in protected mode.
 
@@ -146,19 +146,19 @@ Even though modern kernels use paging, a valid GDT is still mandatory on i386.
 
 ---
 
-2. ## GDT Entry Layout (matches OSDev exactly)
+## 2. GDT Entry Layout (matches OSDev exactly)
 
 Each GDT entry is 8 bytes (64 bits):
 
-Bits:  31           16 15      0
+| Bits            | Fields                                    |
+|-----------------|--------------------------------------------|
+| 31 – 24         | Base 31:24                                 |
+| 23 – 20         | Flags (G, D/B, L, AVL)                     |
+| 19 – 16         | Limit 19:16                                |
+| 15 – 8          | Access Byte                                |
+| 7 – 0           | Base 23:16                                 |
+| 15 – 0          | Base 15:0 / Limit 15:0 (lower dwords)      |
 
-|   Base 31:24   |  G | D | 0 | A |
-|----------------|----------------|
-|  Limit 19:16   |   Access Byte  |
-|----------------|----------------|
-|   Base 23:16   |   Base 15:0    |
-|----------------|----------------|
-|        Limit 15:0               |
 
 
 Your Rust struct maps 1:1 to this layout:
@@ -177,7 +177,7 @@ pub struct GdtEntry {
 ✅ #[repr(C, packed)] is required so Rust doesn’t reorder or pad fields.
 
 
-3. ## Why the Null Descriptor Is Required
+## 3.  Why the Null Descriptor Is Required
 
 ```rust
 GdtEntry::null()
@@ -189,7 +189,7 @@ GdtEntry::null()
 
 If you remove this → ***triple fault***
 
-4. ## Segment Selectors & Offsets
+## 4. Segment Selectors & Offsets
 
 Each descriptor is 8 bytes, so selectors are:
 
@@ -212,7 +212,7 @@ jmp 0x08:.flush ; kernel code
 Selector = ```index * 8```
 
 
-5. ## Access Byte (Most Important Part)
+## 5. Access Byte (Most Important Part)
 
 From OSDev, the access byte layout:
 
@@ -250,7 +250,7 @@ GdtEntry::new(0, 0xFFFFF, 0x9A, 0xC0)
 ✅ These values exactly match OSDev’s recommended setup.
 
 
-6. ## Granularity Byte
+## 6. Granularity Byte
 
 Granularity byte layout:
 
@@ -278,7 +278,7 @@ And pass:
 This creates a ***flat memory model***.
 
 
-7. ## Why Base = 0 and Limit = 0xFFFFF
+## 7. Why Base = 0 and Limit = 0xFFFFF
 
 This is the classic ***flat segmentation model***:
 - All segments start at 0
@@ -287,7 +287,7 @@ This is the classic ***flat segmentation model***:
 
 OSDev explicitly recommends this.
 
-8. ## GDT Pointer (LGDT Format)
+## 8. GDT Pointer (LGDT Format)
 
 LGDT expects ***exactly this structure***:
 
@@ -308,7 +308,7 @@ limit: (size_of::<[GdtEntry; 6]>() - 1) as u16,
 base: &GDT as *const _ as u32,
 ```
 
-9. ## Loading the GDT (ASM side)
+## 9. Loading the GDT (ASM side)
 
 From OSDev’s canonical sequence:
 
@@ -340,7 +340,7 @@ Why the far jump?
 - Flushes the instruction pipeline
 - Required after changing the GDT
 
-10. ## Why the TSS Is Null (For Now)
+## 10. Why the TSS Is Null (For Now)
 ```rust
 GdtEntry::null(), // TSS placeholder
 ```

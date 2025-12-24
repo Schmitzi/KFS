@@ -93,6 +93,23 @@ impl Writer {
         }
     }
 
+    pub fn backspace(&mut self) {
+        if self.column == 0 {
+            return;
+        }
+
+        self.column -= 1;
+
+        let offset = (self.row * VGA_WIDTH + self.column) * 2;
+
+        unsafe {
+            *VGA_BUFFER.add(offset) = b' ';
+            *VGA_BUFFER.add(offset + 1) = self.color;
+        }
+
+        self.update_cursor();
+    }
+
     fn scroll(&mut self) {
         unsafe {
             for row in 1..VGA_HEIGHT {

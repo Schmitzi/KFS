@@ -113,7 +113,7 @@ pub fn print_stack() {
             out(reg) esp,
             out(reg) ebp,
         );
-        
+
         println!("=== Kernel Stack Information ===");
         println!("Stack Pointer (ESP): 0x{:08x}", esp);
         println!("Base Pointer  (EBP): 0x{:08x}", ebp);
