@@ -18,8 +18,10 @@ ASM_SRC := boot.asm
 ASM_OBJ := boot.o
 KB_SRC := kb.asm
 KB_OBJ := kb.o
-EX_SRC := exceptions.asm
-EX_OBJ := exceptions.o
+EX_SRC := exc.asm
+EX_OBJ := exc.o
+GDT_SRC := gdt.asm
+GDT_OBJ := gdt.o
 RUST_LIB := target/i386-unknown-none/debug/libkfs.a
 KERNEL := kernel.bin
 ISO := kfs.iso
@@ -40,6 +42,8 @@ $(ASM_OBJ): $(ASM_SRC)
 	@$(ASM) $(ASM_FLAGS) $(KB_SRC) -o $(KB_OBJ)
 	@echo "Assembling $(EX_SRC)..."
 	@$(ASM) $(ASM_FLAGS) $(EX_SRC) -o $(EX_OBJ)
+	@echo "Assembling $(GDT_SRC)..."
+	@$(ASM) $(ASM_FLAGS) $(GDT_SRC) -o $(GDT_OBJ)
 
 # Build Rust kernel library
 $(RUST_LIB): src/lib.rs src/vga.rs Cargo.toml
@@ -49,7 +53,7 @@ $(RUST_LIB): src/lib.rs src/vga.rs Cargo.toml
 # Link everything into final kernel binary
 $(KERNEL): $(ASM_OBJ) $(RUST_LIB) linker.ld
 	@echo "Linking kernel..."
-	@$(LD) $(LD_FLAGS) -o $(KERNEL) $(ASM_OBJ) $(KB_OBJ) $(EX_OBJ) $(RUST_LIB)
+	@$(LD) $(LD_FLAGS) -o $(KERNEL) $(ASM_OBJ) $(KB_OBJ) $(EX_OBJ) $(GDT_OBJ) $(RUST_LIB)
 	@echo "✓ Kernel built successfully: $(KERNEL)"
 
 # Run kernel in QEMU
@@ -77,7 +81,7 @@ run-iso: iso
 # Clean build artifacts
 clean:
 	@echo "Cleaning build artifacts..."
-	@rm -f $(ASM_OBJ) $(KERNEL) $(KB_OBJ) $(EX_OBJ) *.out	@rm -rf $(ISO_DIR) $(ISO)
+	@rm -f $(ASM_OBJ) $(KERNEL) $(KB_OBJ) $(EX_OBJ) $(GDT_OBJ) *.out	@rm -rf $(ISO_DIR) $(ISO)
 	@cargo clean 2>/dev/null || true
 	@echo "✓ Clean complete"
 

@@ -1,8 +1,7 @@
-// kb.rs - Keyboard handler (warnings fixed)
-
 use crate::pic;
 
 const KEYBOARD_DATA_PORT: u16 = 0x60;
+const KEYBOARD_STATUS_PORT: u16 = 0x64;
 
 // Complete scan code to ASCII lookup table (US QWERTY, lowercase)
 static SCANCODE_TO_ASCII: [u8; 128] = [
@@ -39,24 +38,23 @@ unsafe fn inb(port: u16) -> u8 {
 #[no_mangle]
 pub extern "C" fn rust_keyboard_handler() {
     unsafe {
-        // Read scan code to clear keyboard buffer
-        let scancode = inb(KEYBOARD_DATA_PORT);
+        let status = inb(KEYBOARD_STATUS_PORT);
         
-        // Send EOI to acknowledge interrupt
-        pic::send_eoi(1);
-        
-        // Only process key presses (not releases)
-        if scancode >= 128 || scancode == 0 {
+        if (status & 0x01) == 0 {
+            pic::send_eoi(1);
             return;
         }
         
-        // Convert scan code to ASCII
-        let ascii = SCANCODE_TO_ASCII[scancode as usize];
+        let scancode = inb(KEYBOARD_DATA_PORT);
+        pic::send_eoi(1);
         
-        // Print character if printable
-        if ascii != 0 {
-            // Use print! macro from the prelude
-            crate::print!("{}", ascii as char);
+        if scancode < 128 && scancode != 0 {
+            let ascii = SCANCODE_TO_ASCII[scancode as usize];
+            
+            if ascii != 0 {
+                // Send to shell instead of printing directly
+                crate::nps::handle_input(ascii);
+            }
         }
     }
 }

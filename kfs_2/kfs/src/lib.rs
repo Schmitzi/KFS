@@ -10,7 +10,9 @@ mod vga;
 mod idt;
 mod pic;
 mod kb;
-mod exceptions;
+mod exc;
+mod gdt;
+mod nps;
 
 #[panic_handler]
 fn panic(_info: &PanicInfo) -> ! {
@@ -43,14 +45,19 @@ pub extern "C" fn kernel_main() -> ! {
     idt::init();
     pic::remap();
     idt::enable_interrupts();
+
+    
+    println!("Initializing GDT...");
+    gdt::init();
+    println!("GDT loaded!");    
     
     // Ready message
     vga::writer().set_color(vga::Color::Yellow, vga::Color::Black);
-    println!("System initialized. Keyboard ready!");
+    println!("System initialized. Lets go!");
     println!();
-    vga::writer().set_color(vga::Color::LightCyan, vga::Color::Black);
-    println!("Start typing:");
-    println!();
+    
+    // Enable NPS shell
+    nps::init();
     
     // Main loop
     loop {
