@@ -73,7 +73,7 @@ run-iso: iso
 # Clean build artifacts
 clean:
 	@echo "Cleaning build artifacts..."
-	@rm -f $(ASM_OBJ) $(KERNEL) *.out
+	@rm -f $(ASM_OBJ) $(KERNEL) $(KB_OBJ) *.out
 	@rm -rf $(ISO_DIR) $(ISO)
 	@cargo clean 2>/dev/null || true
 	@echo "✓ Clean complete"
