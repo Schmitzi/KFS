@@ -41,4 +41,4 @@ _start:
 .hang:
     cli                 ; Disable interrupts
     hlt                 ; Halt CPU
-    jmp .hang          ; Loop forever if we wake up
+    jmp .hang           ; Loop forever if we wake up

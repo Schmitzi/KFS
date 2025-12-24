@@ -1,4 +1,4 @@
-; keyboard_int.asm - Assembly wrapper with explicit interrupt control
+; kb.asm - Assembly wrapper with explicit interrupt control
 
 section .text
 

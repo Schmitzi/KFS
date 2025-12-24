@@ -3,14 +3,14 @@ use crate::pic;
 const KEYBOARD_DATA_PORT: u16 = 0x60;
 const KEYBOARD_STATUS_PORT: u16 = 0x64;
 
-// Complete scan code to ASCII lookup table (US QWERTY, lowercase)
+// Complete scan code to ASCII lookup table (DE QWERTZ, lowercase)
 static SCANCODE_TO_ASCII: [u8; 128] = [
     0,    27,  b'1', b'2', b'3', b'4', b'5', b'6',  // 0x00-0x07
     b'7', b'8', b'9', b'0', b'-', b'=', 8,   b'\t', // 0x08-0x0F (backspace, tab)
-    b'q', b'w', b'e', b'r', b't', b'y', b'u', b'i', // 0x10-0x17
+    b'q', b'w', b'e', b'r', b't', b'z', b'u', b'i', // 0x10-0x17
     b'o', b'p', b'[', b']', b'\n', 0,   b'a', b's', // 0x18-0x1F (enter, ctrl)
     b'd', b'f', b'g', b'h', b'j', b'k', b'l', b';', // 0x20-0x27
-    b'\'', b'`', 0,   b'\\', b'z', b'x', b'c', b'v', // 0x28-0x2F (shift)
+    b'\'', b'`', 0,   b'\\', b'y', b'x', b'c', b'v', // 0x28-0x2F (shift)
     b'b', b'n', b'm', b',', b'.', b'/', 0,   b'*',  // 0x30-0x37 (shift, *)
     0,    b' ', 0,   0,   0,   0,   0,   0,          // 0x38-0x3F (alt, caps, F1-F5)
     0,    0,   0,   0,   0,   0,   0,   0,           // 0x40-0x47 (F6-F10, num lock, scroll lock)
@@ -54,6 +54,8 @@ pub extern "C" fn rust_keyboard_handler() {
             if ascii != 0 {
                 // Send to shell instead of printing directly
                 crate::nps::handle_input(ascii);
+            } else {
+                println!("{}", ascii);
             }
         }
     }

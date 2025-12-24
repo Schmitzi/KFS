@@ -17,7 +17,7 @@ impl NPShell {
     }
 
     pub fn show_prompt(&self) {
-        crate::vga::writer().set_color(vga::Color::LightGreen, vga::Color::Black);
+        crate::vga::writer().set_color(vga::Color::Green, vga::Color::Black);
         crate::print!("> ");
         crate::vga::writer().set_color(vga::Color::White, vga::Color::Black);
     }
