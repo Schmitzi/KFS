@@ -1,6 +1,5 @@
-/* linker.ld - Linker script for i386 kernel */
+/* linker.ld - Linker script for i386 kernel (warnings fixed) */
 
-/* Entry point - where execution starts */
 ENTRY(_start)
 
 SECTIONS
@@ -8,39 +7,44 @@ SECTIONS
     /* Kernel is loaded at 1MB by GRUB */
     . = 1M;
 
-    /* Start of kernel in memory */
     _kernel_start = .;
 
     /* Multiboot header MUST come first (GRUB looks in first 8KB) */
-    .multiboot : ALIGN(4K)
-    {
+    .multiboot ALIGN(4K) : {
         *(.multiboot_header)
     }
 
-    /* Read-only data (code) */
-    .text : ALIGN(4K)
-    {
+    /* Read-only code section */
+    .text ALIGN(4K) : {
         *(.text)
+        *(.text.*)
     }
 
-    /* Read-only data (constants, strings, etc) */
-    .rodata : ALIGN(4K)
-    {
+    /* Read-only data section */
+    .rodata ALIGN(4K) : {
         *(.rodata)
+        *(.rodata.*)
     }
 
-    /* Initialized data */
-    .data : ALIGN(4K)
-    {
+    /* Read-write data section */
+    .data ALIGN(4K) : {
         *(.data)
+        *(.data.*)
     }
 
-    /* Uninitialized data (BSS = Block Started by Symbol) */
-    .bss : ALIGN(4K)
-    {
+    /* Uninitialized data section */
+    .bss ALIGN(4K) : {
         *(.bss)
+        *(.bss.*)
+        *(COMMON)
     }
 
-    /* End of kernel in memory */
     _kernel_end = .;
+
+    /* Discard debug and comment sections */
+    /DISCARD/ : {
+        *(.comment)
+        *(.eh_frame)
+        *(.note*)
+    }
 }

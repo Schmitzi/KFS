@@ -1,4 +1,4 @@
-// idt.rs - Interrupt Descriptor Table
+// idt.rs - Complete IDT with all exception handlers
 
 use core::arch::asm;
 
@@ -6,11 +6,11 @@ use core::arch::asm;
 #[repr(C, packed)]
 #[derive(Copy, Clone)]
 struct IdtEntry {
-    offset_low: u16,    // Lower 16 bits of handler address
-    selector: u16,      // Code segment selector
-    zero: u8,           // Always 0
-    type_attr: u8,      // Type and attributes
-    offset_high: u16,   // Upper 16 bits of handler address
+    offset_low: u16,
+    selector: u16,
+    zero: u8,
+    type_attr: u8,
+    offset_high: u16,
 }
 
 impl IdtEntry {
@@ -28,13 +28,12 @@ impl IdtEntry {
         let handler_addr = handler as usize;
         self.offset_low = (handler_addr & 0xFFFF) as u16;
         self.offset_high = ((handler_addr >> 16) & 0xFFFF) as u16;
-        self.selector = 0x08; // Kernel code segment
+        self.selector = 0x08;
         self.zero = 0;
-        self.type_attr = 0x8E; // Present, DPL=0, 32-bit interrupt gate
+        self.type_attr = 0x8E;
     }
 }
 
-// IDT with 256 entries
 #[repr(C, packed)]
 struct Idt {
     entries: [IdtEntry; 256],
@@ -48,26 +47,49 @@ impl Idt {
     }
 }
 
-// IDT pointer structure for lidt instruction
 #[repr(C, packed)]
 struct IdtPointer {
     limit: u16,
     base: u32,
 }
 
-// Global IDT
 static mut IDT: Idt = Idt::new();
 
-// Initialize and load the IDT
+// Import ALL handlers
+extern "C" {
+    fn keyboard_interrupt_handler();
+    fn divide_by_zero_handler();
+    fn invalid_opcode_handler();
+    fn double_fault_handler();
+    fn general_protection_fault_handler();
+    fn page_fault_handler();
+    fn default_interrupt_handler();
+}
+
 pub fn init() {
     unsafe {
-        // Set keyboard interrupt handler (IRQ1 = interrupt 33)
+        // Exception handlers (0-31)
+        IDT.entries[0].set_handler(divide_by_zero_handler);
+        IDT.entries[6].set_handler(invalid_opcode_handler);
+        IDT.entries[8].set_handler(double_fault_handler);
+        IDT.entries[13].set_handler(general_protection_fault_handler);
+        IDT.entries[14].set_handler(page_fault_handler);
+        
+        // Set default handler for ALL other interrupts (1-31, 32-255)
+        // This catches timer, spurious interrupts, etc.
+        for i in 1..256 {
+            if i != 0 && i != 6 && i != 8 && i != 13 && i != 14 && i != 33 {
+                IDT.entries[i].set_handler(default_interrupt_handler);
+            }
+        }
+        
+        // Keyboard interrupt (IRQ1 = interrupt 33)
         IDT.entries[33].set_handler(keyboard_interrupt_handler);
 
         // Load IDT
         let idt_ptr = IdtPointer {
             limit: (core::mem::size_of::<Idt>() - 1) as u16,
-            base: &IDT as *const _ as u32,
+            base: core::ptr::addr_of!(IDT) as u32,
         };
 
         asm!(
@@ -78,14 +100,8 @@ pub fn init() {
     }
 }
 
-// Enable interrupts
 pub fn enable_interrupts() {
     unsafe {
         asm!("sti", options(nomem, nostack));
     }
-}
-
-// Keyboard interrupt handler (will be defined in keyboard module)
-extern "C" {
-    fn keyboard_interrupt_handler();
 }
