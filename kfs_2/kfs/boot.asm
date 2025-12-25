@@ -7,7 +7,7 @@
 section .multiboot_header
 align 4
 
-MULTIBOOT_MAGIC     equ 0x1BADB002      ; Magic number for GRUB
+MULTIBOOT_MAGIC     equ 0x1BADB002      ; Magic number for GRUB (BadBoot)
 MULTIBOOT_FLAGS     equ 0x00000003      ; Align modules + memory map
 MULTIBOOT_CHECKSUM  equ -(MULTIBOOT_MAGIC + MULTIBOOT_FLAGS)
 

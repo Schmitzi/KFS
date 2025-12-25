@@ -1,5 +1,6 @@
 use crate::gdt;
 use crate::vga;
+use crate::vga::Color;
 
 const MAX_COMMAND_LEN: usize = 64;
 
@@ -17,9 +18,7 @@ impl NPShell {
     }
 
     pub fn show_prompt(&self) {
-        crate::vga::writer().set_color(vga::Color::Green, vga::Color::Black);
-        crate::print!("> ");
-        crate::vga::writer().set_color(vga::Color::White, vga::Color::Black);
+        vga::writer().printc( "> ", Color::Green, Color::Black);
     }
 
     pub fn handle_char(&mut self, ch: u8) {
@@ -32,6 +31,7 @@ impl NPShell {
                 self.show_prompt();
             }
             0x08 => {
+                // Backspace
                 if self.pos > 0 {
                     self.pos -= 1;
                     crate::vga::writer().backspace();
@@ -60,8 +60,7 @@ impl NPShell {
         }
 
         // Get command as string
-        let cmd = core::str::from_utf8(&self.buffer[..self.pos])
-            .unwrap_or("");
+        let cmd = core::str::from_utf8(&self.buffer[..self.pos]).unwrap_or("");
 
         println!(); // Newline after command
 
@@ -101,20 +100,23 @@ impl NPShell {
 
     fn cmd_clear(&self) {
         crate::vga::writer().clear_screen();
-        crate::vga::writer().set_color(vga::Color::LightBlue, vga::Color::Black);
+        crate::vga::writer().set_color(Color::LightBlue, Color::Black);
         println!("NPS - Not a POSIX Shell - Type 'help' for commands");
-        crate::vga::writer().set_color(vga::Color::White, vga::Color::Black);
+        crate::vga::writer().set_color(Color::White, Color::Black);
     }
 
     fn cmd_about(&self) {
         println!("KFS_2 - Kernel From Scratch");
+        println!("===========================");
+        println!("");
         println!("A bare-metal i386 kernel written in Rust");
+        println!("By Michael Naysmith");
         println!("Features:");
         println!("  - Custom GDT implementation");
         println!("  - Interrupt handling (IDT + PIC)");
         println!("  - Keyboard input");
         println!("  - VGA text mode with colors");
-        println!("  - This shell!");
+        println!("  - NPS Shell");
     }
 
     fn cmd_halt(&self) {
@@ -160,9 +162,7 @@ static mut NPSHELL: NPShell = NPShell::new();
 
 // Initialize shell
 pub fn init() {
-    crate::vga::writer().set_color(vga::Color::LightBlue, vga::Color::Black);
-    println!("NPS - Not a POSIX Shell - Type 'help' for commands");
-    crate::vga::writer().set_color(vga::Color::White, vga::Color::Black);
+    vga::writer().printc("NPS - Not a POSIX Shell - Type 'help' for commands\n", Color::LightBlue, Color::Black);
     unsafe {
         NPSHELL.show_prompt();
     }

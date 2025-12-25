@@ -1,6 +1,8 @@
 // gdt.rs - Global Descriptor Table implementation
 
 use core::arch::asm;
+use crate::vga;
+use crate::vga::Color;
 
 // GDT Entry structure (8 bytes)
 #[repr(C, packed)]
@@ -90,6 +92,7 @@ extern "C" {
 
 // Initialize and load the GDT
 pub fn init() {
+    vga::writer().printc("[4/4] Initializing GDT...\n", Color::Yellow, Color::Black);
     unsafe {
         let gdt_ptr = GdtPointer {
             limit: (core::mem::size_of::<[GdtEntry; 6]>() - 1) as u16,
@@ -98,6 +101,7 @@ pub fn init() {
         
         gdt_flush(&gdt_ptr);
     }
+    vga::writer().printc("      GDT loaded!\n\n", Color::Green, Color::Black);
 }
 
 // Print kernel stack information

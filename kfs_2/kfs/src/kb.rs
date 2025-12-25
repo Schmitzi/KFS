@@ -3,7 +3,7 @@ use crate::pic;
 const KEYBOARD_DATA_PORT: u16 = 0x60;
 const KEYBOARD_STATUS_PORT: u16 = 0x64;
 
-// Complete scan code to ASCII lookup table (DE QWERTZ, lowercase)
+// Complete scan code to ASCII lookup table (DE QWERTZ, lowercase) --- NOT COMPLETE ---
 static SCANCODE_TO_ASCII: [u8; 128] = [
     0,    27,  b'1', b'2', b'3', b'4', b'5', b'6',  // 0x00-0x07
     b'7', b'8', b'9', b'0', b'-', b'=', 8,   b'\t', // 0x08-0x0F (backspace, tab)

@@ -353,3 +353,53 @@ OSDev notes:
 You correctly reserve the slot now so:
 - Offsets stay stable
 - You can add it later without breaking ABI
+
+# ***PIC*** - Programmmable Interrupt Controller
+
+- [What does it do](#what-does-it-do)
+- [PIC Design](#pic-design)
+- [How does the 8259 PIC chip work?](#how-does-the-8259-pic-chip-work)
+
+The 8259 PIC is one of the most important chips making up the x86 architecture. Without it, the
+x86 architecture would not be an interrupt driven architecture. The function of the 8259ABI
+is to manage hardware interrupts and send them to the appropriate system interrupt. This
+allows the system to respond to devices needs without loss of time (from polling the device for
+instance).
+
+## What does it do
+
+The 8259 PIC controls the CPUs interrupt mechanism, by accessing several interrupt requests and 
+feeding them to the processor in order. For instance, when a keyboard registers a keyhit,
+it sends a pulse along its interrupt line (IRQ1) to the PIC chip, which then translates the 
+IRQ (```Interrupt Request```) into a system interrupt, and sends a message to interrupt the CPU from whatever it is 
+the CPU from what its doing. Part of the kernel's job is to either handle these IRQs and perform the necessary procedures
+(poll the keyboard for the ```scancode```) or alert a userspace program to the interrupt
+(send a message to the keyboard driver).
+
+Without a PIC, you would have to poll all the devices in the system to see if they want too
+do anything (signal an event), but with a PIC, your system can run along nicely until such time
+that a device wants to signal an event, which means you don't have to waste time going to the devices,
+you let the devices come to you when they are ready.
+
+## PIC Design
+
+In the beginning (IBM PC and XT), only a single 8259 PIC was used which provided 8 IRQs to
+the system. These were traditionally mapped by the BIOS to interrupts 8 - 15 (0x08 - 0x0F).
+It is unlikely to see one of these today.
+
+We will be using the later IBM PC/AT by extending the PC architecture by adding a second 8259
+PIC chip. This is possible due to the 8259A's ability to cascade interrupts, that is, have
+them flow through one chip into another. This gives a total of 15 interrupts. But why 15 and
+not 16? Because when you cascade chips, the PIC needs to use one of the interrupt lines to signal
+the other chip.
+
+That means in an AT, IRQ line 2 is used to signal the second chip. Because of this, IRQ 2 is not
+available for use by hardware devices, which got wired to IRQ 9 on the ```slave PIC``` instead.
+The real mode BIOS used to set up an interrupt handler for IRQ 9 that redirects to the IRQ 2 handler.
+This way DOS drivers who used IRQ 2 continued to work. This two-chip archittecture is still used and
+available in modern systems, and hasn't changed (except for the advent of the above-mentioned APIC
+architecture)-
+
+## How does the 8259 PIC chip work?
+
+

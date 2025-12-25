@@ -168,6 +168,12 @@ impl Writer {
         }
     }
 
+    pub fn printc(&mut self, msg: &str, fg: Color, bg: Color) {
+        self.color = color_byte(fg, bg);
+        self.write_string(msg);
+        self.color = color_byte(Color::White, Color::Black);
+    }
+
     // These methods are provided for future use
     #[allow(dead_code)]
     pub fn set_cursor_position(&mut self, row: usize, col: usize) {

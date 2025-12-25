@@ -1,6 +1,8 @@
 // idt.rs - Complete IDT with all exception handlers
 
 use core::arch::asm;
+use crate::vga;
+use crate::vga::Color;
 
 // IDT entry structure
 #[repr(C, packed)]
@@ -67,6 +69,7 @@ extern "C" {
 }
 
 pub fn init() {
+    vga::writer().printc("[1/4] Initializing IDT...\n", Color::Yellow, Color::Black);
     unsafe {
         // Exception handlers (0-31)
         IDT.entries[0].set_handler(divide_by_zero_handler);
@@ -98,10 +101,13 @@ pub fn init() {
             options(readonly, nostack, preserves_flags)
         );
     }
+    vga::writer().printc("      IDT initialized!\n\n", Color::Green, Color::Black);
 }
 
 pub fn enable_interrupts() {
+    vga::writer().printc("[3/4] Initializing Interrupts...\n", Color::Yellow, Color::Black);
     unsafe {
         asm!("sti", options(nomem, nostack));
     }
+    vga::writer().printc("      Interrupts loaded!\n\n", Color::Green, Color::Black);
 }
