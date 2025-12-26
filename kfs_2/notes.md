@@ -402,4 +402,5 @@ architecture)-
 
 ## How does the 8259 PIC chip work?
 
+Each of the two 8259 PICs in modern systems have 8 inputs. When any of the inputs is raised, the PIC sets off a bit internally telling one of the inputs need servicing. It then checks whether that channel is masked out or not, and whether there's an interrupt already pending. If the channel is unmasked and there's no interrupt pending, the PIC will raise the interrupt line. On the slave, this feeds IRQ 2 to the master, and the master is connected to the processor interrupt line.
 

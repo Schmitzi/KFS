@@ -35,7 +35,7 @@ unsafe fn io_wait() {
 }
 
 pub fn remap() {
-    vga::writer().printc("[2/4] Remapping PIC...\n", Color::Yellow, Color::Black);
+    vga::writer().printc("[2/4] Remapping Programmable Interrupt Controller...\n", Color::Yellow, Color::Black);
     unsafe {
         // Start initialization - ICW 1
         outb(PIC1_COMMAND, ICW1_INIT);

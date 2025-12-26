@@ -1,4 +1,4 @@
-# Makefile for $(KFS) kernel
+# Makefile for KFS_2 kernel
 KFS := KFS_2
 
 # Compiler and tools
@@ -10,60 +10,64 @@ QEMU := qemu-system-i386
 
 # Flags
 ASM_FLAGS := -f elf32
-RUST_FLAGS := build -Z build-std=core --target kfs/i386-unknown-none.json
-LD_FLAGS := -m elf_i386 -n -T linker.ld
+RUST_FLAGS := build -Z build-std=core --target i386-unknown-none.json
+LD_FLAGS := -m elf_i386 -n -T kfs/linker.ld
 
 # Directories
 KFS_DIR := kfs
+SRC_DIR := $(KFS_DIR)/src
 OBJ_DIR := obj
 ISO_DIR := iso
 BOOT_DIR := $(ISO_DIR)/boot
 GRUB_DIR := $(BOOT_DIR)/grub
 
-# Files
-ASM_SRC := $(KFS_DIR)/boot.asm
-ASM_OBJ := $(OBJ_DIR)/boot.o
-KB_SRC := $(KFS_DIR)/kb.asm
-KB_OBJ := $(OBJ_DIR)/kb.o
-EX_SRC := $(KFS_DIR)/exc.asm
-EX_OBJ := $(OBJ_DIR)/exc.o
-GDT_SRC := $(KFS_DIR)/gdt.asm
-GDT_OBJ := $(OBJ_DIR)/gdt.o
-LIB_RS := $(KFS_DIR)/src/lib.rs
-VGA_RS := $(KFS_DIR)/src/vga.rs
+# Assembly files
+ASM_SRCS := boot.asm kb.asm exc.asm gdt.asm
+ASM_OBJS := $(addprefix $(OBJ_DIR)/, $(ASM_SRCS:.asm=.o))
+
+# Rust files
+RUST_SRCS := $(wildcard $(SRC_DIR)/*.rs)
+RUST_LIB := $(KFS_DIR)/target/i386-unknown-none/debug/libkfs.a
+
+# Other files
 LINKER := $(KFS_DIR)/linker.ld
 CARGO := $(KFS_DIR)/Cargo.toml
-RUST_LIB := $(KFS_DIR)/target/i386-unknown-none/debug/libkfs.a
 KERNEL := kernel.bin
 ISO := kfs.iso
 
-
 # Default target
-all: setup $(KERNEL)
+all: $(KERNEL)
 
-setup:
-	@mkdir -p obj
+# Create obj directory
+$(OBJ_DIR):
+	@mkdir -p $(OBJ_DIR)
 
-# Compile assembly bootloader
-$(ASM_OBJ): $(ASM_SRC)
-	@echo "Assembling $(ASM_SRC)..."
-	@$(ASM) $(ASM_FLAGS) $(ASM_SRC) -o $(ASM_OBJ)
-	@echo "Assembling $(KB_SRC)..."
-	@$(ASM) $(ASM_FLAGS) $(KB_SRC) -o $(KB_OBJ)
-	@echo "Assembling $(EX_SRC)..."
-	@$(ASM) $(ASM_FLAGS) $(EX_SRC) -o $(EX_OBJ)
-	@echo "Assembling $(GDT_SRC)..."
-	@$(ASM) $(ASM_FLAGS) $(GDT_SRC) -o $(GDT_OBJ)
+# Compile each assembly file
+$(OBJ_DIR)/boot.o: $(KFS_DIR)/boot.asm | $(OBJ_DIR)
+	@echo "Assembling boot.asm..."
+	@$(ASM) $(ASM_FLAGS) $< -o $@
+
+$(OBJ_DIR)/kb.o: $(KFS_DIR)/kb.asm | $(OBJ_DIR)
+	@echo "Assembling kb.asm..."
+	@$(ASM) $(ASM_FLAGS) $< -o $@
+
+$(OBJ_DIR)/exc.o: $(KFS_DIR)/exc.asm | $(OBJ_DIR)
+	@echo "Assembling exc.asm..."
+	@$(ASM) $(ASM_FLAGS) $< -o $@
+
+$(OBJ_DIR)/gdt.o: $(KFS_DIR)/gdt.asm | $(OBJ_DIR)
+	@echo "Assembling gdt.asm..."
+	@$(ASM) $(ASM_FLAGS) $< -o $@
 
 # Build Rust kernel library
-$(RUST_LIB): $(LIB_RS) $(VGA_RS) $(CARGO)
+$(RUST_LIB): $(RUST_SRCS) $(CARGO)
 	@echo "Building Rust kernel..."
-	@$(RUSTC) $(RUST_FLAGS)
+	@cd $(KFS_DIR) && $(RUSTC) $(RUST_FLAGS)
 
 # Link everything into final kernel binary
-$(KERNEL): $(ASM_OBJ) $(RUST_LIB) $(LINKER)
+$(KERNEL): $(ASM_OBJS) $(RUST_LIB) $(LINKER)
 	@echo "Linking kernel..."
-	@$(LD) $(LD_FLAGS) -o $(KERNEL) $(ASM_OBJ) $(KB_OBJ) $(EX_OBJ) $(GDT_OBJ) $(RUST_LIB)
+	@$(LD) $(LD_FLAGS) -o $(KERNEL) $(ASM_OBJS) $(RUST_LIB)
 	@echo "✓ Kernel built successfully: $(KERNEL)"
 
 # Run kernel in QEMU
@@ -91,14 +95,15 @@ run-iso: iso
 # Clean build artifacts
 clean:
 	@echo "Cleaning build artifacts..."
-	@rm -f $(ASM_OBJ) $(KERNEL) $(KB_OBJ) $(EX_OBJ) $(GDT_OBJ) *.out $(OBJ_DIR)	@rm -rf $(ISO_DIR) $(ISO)
-	@cargo clean 2>/dev/null || true
+	@rm -f $(KERNEL) *.out
+	@rm -rf $(OBJ_DIR) $(ISO_DIR) $(ISO)
+	@cd $(KFS_DIR) && cargo clean 2>/dev/null || true
 	@echo "✓ Clean complete"
 
 # Remove everything including Cargo cache
 fclean: clean
 	@echo "Deep cleaning..."
-	@rm -rf target/
+	@rm -rf $(KFS_DIR)/target/
 	@echo "✓ Deep clean complete"
 
 # Rebuild everything
