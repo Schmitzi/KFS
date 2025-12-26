@@ -1,5 +1,5 @@
 # Makefile for $(KFS) kernel
-KFS := KFS_1
+KFS := KFS_2
 
 # Compiler and tools
 ASM := nasm
@@ -10,29 +10,39 @@ QEMU := qemu-system-i386
 
 # Flags
 ASM_FLAGS := -f elf32
-RUST_FLAGS := build -Z build-std=core --target i386-unknown-none.json
+RUST_FLAGS := build -Z build-std=core --target kfs/i386-unknown-none.json
 LD_FLAGS := -m elf_i386 -n -T linker.ld
 
-# Files
-ASM_SRC := boot.asm
-ASM_OBJ := boot.o
-KB_SRC := kb.asm
-KB_OBJ := kb.o
-EX_SRC := exc.asm
-EX_OBJ := exc.o
-GDT_SRC := gdt.asm
-GDT_OBJ := gdt.o
-RUST_LIB := target/i386-unknown-none/debug/libkfs.a
-KERNEL := kernel.bin
-ISO := kfs.iso
-
 # Directories
+KFS_DIR := kfs
+OBJ_DIR := obj
 ISO_DIR := iso
 BOOT_DIR := $(ISO_DIR)/boot
 GRUB_DIR := $(BOOT_DIR)/grub
 
+# Files
+ASM_SRC := $(KFS_DIR)/boot.asm
+ASM_OBJ := $(OBJ_DIR)/boot.o
+KB_SRC := $(KFS_DIR)/kb.asm
+KB_OBJ := $(OBJ_DIR)/kb.o
+EX_SRC := $(KFS_DIR)/exc.asm
+EX_OBJ := $(OBJ_DIR)/exc.o
+GDT_SRC := $(KFS_DIR)/gdt.asm
+GDT_OBJ := $(OBJ_DIR)/gdt.o
+LIB_RS := $(KFS_DIR)/src/lib.rs
+VGA_RS := $(KFS_DIR)/src/vga.rs
+LINKER := $(KFS_DIR)/linker.ld
+CARGO := $(KFS_DIR)/Cargo.toml
+RUST_LIB := $(KFS_DIR)/target/i386-unknown-none/debug/libkfs.a
+KERNEL := kernel.bin
+ISO := kfs.iso
+
+
 # Default target
-all: $(KERNEL)
+all: setup $(KERNEL)
+
+setup:
+	@mkdir -p obj
 
 # Compile assembly bootloader
 $(ASM_OBJ): $(ASM_SRC)
@@ -46,12 +56,12 @@ $(ASM_OBJ): $(ASM_SRC)
 	@$(ASM) $(ASM_FLAGS) $(GDT_SRC) -o $(GDT_OBJ)
 
 # Build Rust kernel library
-$(RUST_LIB): src/lib.rs src/vga.rs Cargo.toml
+$(RUST_LIB): $(LIB_RS) $(VGA_RS) $(CARGO)
 	@echo "Building Rust kernel..."
 	@$(RUSTC) $(RUST_FLAGS)
 
 # Link everything into final kernel binary
-$(KERNEL): $(ASM_OBJ) $(RUST_LIB) linker.ld
+$(KERNEL): $(ASM_OBJ) $(RUST_LIB) $(LINKER)
 	@echo "Linking kernel..."
 	@$(LD) $(LD_FLAGS) -o $(KERNEL) $(ASM_OBJ) $(KB_OBJ) $(EX_OBJ) $(GDT_OBJ) $(RUST_LIB)
 	@echo "✓ Kernel built successfully: $(KERNEL)"
@@ -81,7 +91,7 @@ run-iso: iso
 # Clean build artifacts
 clean:
 	@echo "Cleaning build artifacts..."
-	@rm -f $(ASM_OBJ) $(KERNEL) $(KB_OBJ) $(EX_OBJ) $(GDT_OBJ) *.out	@rm -rf $(ISO_DIR) $(ISO)
+	@rm -f $(ASM_OBJ) $(KERNEL) $(KB_OBJ) $(EX_OBJ) $(GDT_OBJ) *.out $(OBJ_DIR)	@rm -rf $(ISO_DIR) $(ISO)
 	@cargo clean 2>/dev/null || true
 	@echo "✓ Clean complete"
 

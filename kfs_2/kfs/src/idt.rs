@@ -59,7 +59,7 @@ static mut IDT: Idt = Idt::new();
 
 // Import ALL handlers
 extern "C" {
-    fn keyboard_interrupt_handler();
+    fn kb_pic_handler();
     fn divide_by_zero_handler();
     fn invalid_opcode_handler();
     fn double_fault_handler();
@@ -87,7 +87,7 @@ pub fn init() {
         }
         
         // Keyboard interrupt (IRQ1 = interrupt 33)
-        IDT.entries[33].set_handler(keyboard_interrupt_handler);
+        IDT.entries[33].set_handler(kb_pic_handler);
 
         // Load IDT
         let idt_ptr = IdtPointer {

@@ -96,7 +96,7 @@ pub fn init() {
     unsafe {
         let gdt_ptr = GdtPointer {
             limit: (core::mem::size_of::<[GdtEntry; 6]>() - 1) as u16,
-            base: &GDT as *const _ as u32,
+            base: &raw const GDT as *const _ as u32,
         };
         
         gdt_flush(&gdt_ptr);
@@ -138,7 +138,7 @@ pub fn print_stack() {
 pub fn print_gdt() {
     unsafe {
         println!("=== Global Descriptor Table ===");
-        println!("GDT Address: 0x{:08x}", &GDT as *const _ as u32);
+        println!("GDT Address: 0x{:08x}", &raw const GDT as *const _ as u32);
         println!("GDT Size: {} bytes", core::mem::size_of::<[GdtEntry; 6]>());
         println!();
         

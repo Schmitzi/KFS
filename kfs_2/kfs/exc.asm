@@ -1,4 +1,4 @@
-; exceptions.asm - Assembly wrappers for exception handlers
+; exc.asm - Assembly wrappers for exception handlers
 
 section .text
 

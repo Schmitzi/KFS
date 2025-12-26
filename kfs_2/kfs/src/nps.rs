@@ -162,15 +162,17 @@ static mut NPSHELL: NPShell = NPShell::new();
 
 // Initialize shell
 pub fn init() {
-    vga::writer().printc("NPS - Not a POSIX Shell - Type 'help' for commands\n", Color::LightBlue, Color::Black);
+    vga::writer().printc("NPS - Not a POSIX Shell - Type 'help' for commands\n\n", Color::LightBlue, Color::Black);
     unsafe {
-        NPSHELL.show_prompt();
+        let shell = &mut *core::ptr::addr_of_mut!(NPSHELL);
+        shell.show_prompt();
     }
 }
 
 // Handle keyboard input for shell
 pub fn handle_input(ch: u8) {
     unsafe {
-        NPSHELL.handle_char(ch);
+        let shell = &mut *core::ptr::addr_of_mut!(NPSHELL);
+        shell.handle_char(ch);
     }
 }

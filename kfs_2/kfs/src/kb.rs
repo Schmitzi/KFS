@@ -36,7 +36,7 @@ unsafe fn inb(port: u16) -> u8 {
 }
 
 #[no_mangle]
-pub extern "C" fn rust_keyboard_handler() {
+pub extern "C" fn kbhandler() {
     unsafe {
         let status = inb(KEYBOARD_STATUS_PORT);
         
